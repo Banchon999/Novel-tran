@@ -206,6 +206,7 @@
     <!-- CHAPTERS TAB -->
     <div class="tab-content" id="tab-chapters" style="display:none">
       <div class="tab-toolbar">
+        <input type="text" id="chapterSearch" class="search-input" placeholder="ค้นหาตอน..." oninput="renderChapters()" style="flex:1;min-width:120px;max-width:220px"/>
         <button class="btn btn-primary btn-sm" onclick="openModal('modal-new-chapter')">＋ เพิ่มตอน</button>
         <button class="btn btn-secondary btn-sm" onclick="openEpubImport()">📗 Import EPUB</button>
         <input type="file" id="epubFileInput" accept=".epub" style="display:none" onchange="handleEpubImport(event)"/>
@@ -1618,6 +1619,16 @@
   </div>
 </div>
 
-<script src="app.js"></script>
+<!-- ══ Module scripts (loaded in dependency order) ══ -->
+<script defer src="modules/state.js"></script>
+<script defer src="modules/config.js"></script>
+<script defer src="modules/storage.js"></script>
+<script defer src="modules/api.js"></script>
+<script defer src="modules/workspace.js"></script>
+<script defer src="modules/chapters.js"></script>
+<script defer src="modules/translation.js"></script>
+<script defer src="modules/review.js"></script>
+<script defer src="modules/batch.js"></script>
+<script defer src="modules/ui.js"></script>
 </body>
 </html>
