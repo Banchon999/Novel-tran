@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"/>
+  <title>NovelTrans v10 Pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Cinzel:wght@400;600;700&family=Noto+Serif+Thai:wght@300;400;500;600&family=Noto+Sans+Thai:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+<div class="bg-layer"></div>
+<div class="bg-noise"></div>
+
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<aside id="sidebar">
+  <div class="sb-header">
+    <div class="sb-brand">
+      <span class="sb-icon">⚔</span>
+      <div>
+        <div class="sb-title">NovelTrans</div>
+        <div class="sb-sub">v10 Pro · Multi File</div>
+      </div>
+    </div>
+    <button class="icon-btn" onclick="closeSidebar()">✕</button>
+  </div>
+  <div class="sb-section">
+    <div class="api-status-row">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText" class="status-text">ตรวจสอบ...</span>
+    </div>
+    <div class="cost-mini" id="costMini">$0.000000</div>
+  </div>
+  <div class="sb-section sb-ws-section">
+    <div class="sb-label-row">
+      <span class="sb-label">WORKSPACES</span>
+      <button class="icon-btn-sm" onclick="openModal('modal-new-ws')">＋</button>
+    </div>
+    <div id="wsList" class="ws-list"></div>
+  </div>
+  <div class="sb-section">
+    <button class="sb-action-btn" onclick="openImportWs()">📥 Import Workspace</button>
+    <input type="file" id="importWsFile" accept=".json" style="display:none" onchange="importWorkspace(event)"/>
+    <button class="sb-action-btn" onclick="openMultiExport()">📦 Export หลาย Workspace</button>
+    <button class="sb-action-btn" onclick="exportAllWorkspacesJSON()" style="background:rgba(201,168,76,0.12);border-color:var(--gold);color:var(--gold-light)">💾 Backup ทั้งหมด (1-click)</button>
+    <button class="sb-action-btn" onclick="openModal('modal-settings')">⚙ ตั้งค่า API Key</button>
+    <button class="sb-action-btn" onclick="openAddCustomModelModal()">🤖 เพิ่ม Custom Model</button>
+    <button class="sb-action-btn" onclick="openThemeEditor()">🎨 Theme Editor</button>
+  </div>
+</aside>
+
+<div id="appMain">
+  <header class="app-header">
+    <div class="header-left">
+      <button class="icon-btn" onclick="openSidebar()">☰</button>
+      <div class="header-brand">
+        <span class="header-icon">⚔</span>
+        <span class="header-title">NovelTrans</span>
+        <span class="header-ver">v10 Pro</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <span id="wsNameHeader" class="ws-name-header">—</span>
+      <div class="cost-badge" id="costBadge">$0.000000</div>
+    </div>
+  </header>
+  <!-- Backup warning bar (hidden by default) -->
+  <div id="backupWarnBar" style="display:none;align-items:center;gap:8px;padding:5px 16px;
+    background:rgba(180,100,0,0.18);border-bottom:1px solid var(--gold);
+    font-size:0.76rem;color:var(--gold-light);flex-wrap:wrap"></div>
+
+  <div id="noWsMsg" class="no-ws-msg">
+    <div class="no-ws-icon">⚔</div>
+    <div class="no-ws-title">NovelTrans v10 Pro</div>
+    <div class="no-ws-sub">สร้างหรือเลือก Workspace เพื่อเริ่มแปล</div>
+    <button class="btn btn-primary" onclick="openModal('modal-new-ws')">＋ สร้าง Workspace ใหม่</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="openImportWs()">📥 Import Workspace</button>
+  </div>
+
+  <div id="wsContent" class="ws-content-hidden">
+    <div class="sub-tabs">
+      <button class="sub-tab active" data-tab="translate" onclick="switchTab('translate')">⚡ แปล</button>
+      <button class="sub-tab" data-tab="chapters" onclick="switchTab('chapters')">📚 ตอน</button>
+      <button class="sub-tab" data-tab="glossary" onclick="switchTab('glossary')">📖 คลังศัพท์</button>
+      <button class="sub-tab" data-tab="styles" onclick="switchTab('styles')">🖊 Styles</button>
+      <button class="sub-tab" data-tab="marathon" onclick="switchTab('marathon')">🏃 Marathon</button>
+      <button class="sub-tab" data-tab="settings-ws" onclick="switchTab('settings-ws')">⚙ ตั้งค่า</button>
+    </div>
+
+    <!-- TRANSLATE TAB -->
+    <div class="tab-content active" id="tab-translate">
+      <div class="translate-layout">
+        <div class="t-pane">
+          <div class="pane-header">
+            <span class="pane-title">📖 ต้นฉบับ</span>
+            <div class="pane-actions">
+              <button class="icon-btn-sm" onclick="detectGlossary()" title="ตรวจจับคำศัพท์">🔍</button>
+              <button class="icon-btn-sm" onclick="cleanSourceText()" title="ลบ Base64/ขยะออก">🧹</button>
+              <button class="icon-btn-sm" onclick="clearSource()">✕</button>
+            </div>
+          </div>
+          <div id="sourceHighlight" class="source-highlight" style="display:none" onclick="hideHighlight()"></div>
+          <textarea id="sourceText" class="editor-ta" placeholder="วางข้อความภาษาเกาหลีที่นี่..."></textarea>
+          <div class="pane-footer">
+            <span id="sourceStats">0 ตัวอักษร</span>
+            <div class="save-row">
+              <select id="chapterSaveTarget" class="mini-select"></select>
+              <button class="btn-xs" onclick="saveToChapter()">💾 บันทึก</button>
+            </div>
+          </div>
+        </div>
+        <div class="t-pane">
+          <div class="pane-header">
+            <span class="pane-title">⚡ คำแปล (ไทย)</span>
+            <div class="pane-actions">
+              <button class="icon-btn-sm" onclick="addLineBreaksOutput()" title="เพิ่ม 1 บรรทัดว่างระหว่างทุกบรรทัด">📐</button>
+              <button class="icon-btn-sm" onclick="addOneLineOutput()" title="Add 1 Line — เพิ่มบรรทัดว่างก่อนย่อหน้าสุดท้าย">📏</button>
+              <button class="icon-btn-sm" onclick="copyTranslation()">⎘</button>
+              <button class="icon-btn-sm" onclick="clearTranslation()">✕</button>
+            </div>
+          </div>
+          <div id="translationOutput" class="editor-output">
+            <div class="output-placeholder">คำแปลจะปรากฏที่นี่...</div>
+          </div>
+          <div class="pane-footer">
+            <span id="translationStats">รอการแปล</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="progressContainer" class="progress-box" style="display:none">
+        <div class="progress-label-row">
+          <span id="progressLabel">กำลังแปล...</span>
+          <span id="progressPct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <div class="pipeline-stages">
+          <div class="stage" id="stage-glossary">📚 Glossary</div>
+          <div class="stage" id="stage-translate">⚡ แปล</div>
+          <div class="stage" id="stage-polish">✨ Polish</div>
+          <div class="stage" id="stage-done">✓ เสร็จ</div>
+        </div>
+      </div>
+
+      <div class="action-bar">
+        <button class="btn btn-primary" id="translateBtn" onclick="startTranslation()">⚡ แปล</button>
+        <button class="btn btn-secondary" onclick="openLoadFromChapter()">📂 โหลดตอน</button>
+        <button class="btn btn-secondary" onclick="runQACheck()">🔍 QA</button>
+        <button class="btn btn-secondary" onclick="openFindReplace()">⇄ Find</button>
+        <button class="btn btn-secondary" onclick="openExportModal()">📤 Export</button>
+        <div class="quick-settings">
+          <select id="translateModel" class="mini-select">
+            <optgroup label="── Google ──">
+              <option value="google/gemini-2.5-flash">Gemini 2.5 Flash 🔥</option>
+              <option value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+              <option value="google/gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
+              <option value="google/gemini-1.5-flash">Gemini 1.5 Flash</option>
+            </optgroup>
+            <optgroup label="── OpenAI ──">
+              <option value="openai/gpt-5-nano">GPT-5 Nano ✨</option>
+              <option value="openai/gpt-5">GPT-5</option>
+              <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
+              <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+              <option value="openai/gpt-4o">GPT-4o</option>
+              <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+            </optgroup>
+            <optgroup label="── DeepSeek ──">
+              <option value="deepseek/deepseek-v3.2">DeepSeek V3.2 🆕</option>
+              <option value="deepseek/deepseek-chat-v3-0324">DeepSeek V3 (Mar)</option>
+              <option value="deepseek/deepseek-chat">DeepSeek V3</option>
+              <option value="deepseek/deepseek-r1">DeepSeek R1</option>
+            </optgroup>
+            <optgroup label="── xAI ──">
+              <option value="x-ai/grok-4">Grok 4</option>
+              <option value="x-ai/grok-4-fast">Grok 4 Fast</option>
+            </optgroup>
+            <optgroup label="── อื่นๆ ──">
+              <option value="anthropic/claude-haiku-4.5">Claude Haiku 4.5</option>
+              <option value="anthropic/claude-3-haiku">Claude Haiku 3</option>
+              <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (ฟรี)</option>
+              <option value="meta-llama/llama-4-scout:free">Llama 4 Scout (ฟรี)</option>
+            </optgroup>
+          </select>
+          <select id="activeStyleSelect" class="mini-select" title="Style"></select>
+          <label class="toggle-mini"><input type="checkbox" id="usePolish"/> Polish</label>
+          <label class="toggle-mini"><input type="checkbox" id="useMemory" checked/> Memory</label>
+          <label class="toggle-mini" title="ดึง context จากตอนก่อนหน้า"><input type="checkbox" id="usePrevChapter"/> Prev Ch</label>
+          <select id="prevChapterType" class="mini-select" title="เลือกประเภท context จากตอนก่อน" style="display:none">
+            <option value="translation">คำแปล</option>
+            <option value="source">ต้นฉบับ</option>
+          </select>
+          <label class="toggle-mini" title="0 = ไม่แบ่ง">
+            <span style="color:var(--text-muted);font-size:0.74rem">Chunk</span>
+            <input type="number" id="chunkSize" value="0" min="0" max="9999" step="100"
+              style="width:52px;background:var(--bg-deep);border:1px solid var(--border);border-radius:4px;
+                     color:var(--text-secondary);padding:2px 4px;font-size:0.74rem;font-family:var(--font-mono);
+                     outline:none;text-align:center;"
+              title="จำนวนตัวอักษรต่อ chunk (0 = ทั้งก้อน)"/>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHAPTERS TAB -->
+    <div class="tab-content" id="tab-chapters" style="display:none">
+      <div class="tab-toolbar">
+        <button class="btn btn-primary btn-sm" onclick="openModal('modal-new-chapter')">＋ เพิ่มตอน</button>
+        <button class="btn btn-secondary btn-sm" onclick="openEpubImport()">📗 Import EPUB</button>
+        <input type="file" id="epubFileInput" accept=".epub" style="display:none" onchange="handleEpubImport(event)"/>
+        <button class="btn btn-secondary btn-sm" onclick="openBatchChapters()">⚡ แปล Batch</button>
+        <button class="btn btn-secondary btn-sm" onclick="openBulkRename()">✏ แก้ชื่อตอน</button>
+        <button class="btn btn-ghost btn-sm" onclick="renumberAllChapters()" title="เรียงเลขตอนใหม่ตามลำดับปัจจุบัน">🔢 Re-number</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportWorkspaceJSON()">📤 Export JSON</button>
+        <button class="btn btn-ghost btn-sm" onclick="openReviewSearch()" title="ตรวจทบทวนคำทีละ occurrence พร้อม context">🔎 ตรวจคำ</button>
+        <span id="chapterCount" class="count-label"></span>
+      </div>
+      <!-- Bulk delete toolbar — แสดงเมื่อเลือก ≥1 ตอน -->
+      <div id="bulkDeleteBar" style="display:none;align-items:center;gap:8px;padding:6px 10px;background:rgba(139,26,42,0.1);border-bottom:1px solid rgba(194,48,72,0.25);flex-wrap:wrap">
+        <input type="checkbox" id="chkSelectAll" style="accent-color:var(--gold)" onchange="chSelectAll(this.checked)" title="เลือก/ยกเลิกทั้งหมด"/>
+        <span id="bulkDeleteCount" style="font-size:0.78rem;color:var(--text-secondary)">0 ตอนที่เลือก</span>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button class="btn-xs" onclick="chSelectPending()">เฉพาะรอแปล</button>
+          <button class="btn-xs" onclick="chSelectTranslated()">เฉพาะแปลแล้ว</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSelectedChapters()" style="padding:3px 10px;font-size:0.74rem">🗑 ลบที่เลือก</button>
+          <button class="btn-xs" onclick="exitBulkMode()">✕ ยกเลิก</button>
+        </div>
+      </div>
+      <!-- Enter bulk mode button -->
+      <div id="bulkModeEntryBar" style="display:flex;align-items:center;padding:4px 10px;border-bottom:1px solid var(--border)">
+        <button class="btn-xs" onclick="enterBulkMode()" style="color:var(--crimson-light);border-color:rgba(194,48,72,0.3)">☑ เลือกหลายตอน</button>
+      </div>
+      <div id="chapterList" class="chapter-list"></div>
+    </div>
+
+    <!-- GLOSSARY TAB -->
+    <div class="tab-content" id="tab-glossary" style="display:none">
+      <div class="tab-toolbar">
+        <input type="text" id="glossarySearch" class="search-input" placeholder="ค้นหา..." oninput="filterGlossary()"/>
+        <select id="glossaryTypeFilter" class="mini-select" onchange="filterGlossary()">
+          <option value="">ทุกประเภท</option>
+          <option value="character">ตัวละคร</option>
+          <option value="title">ตำแหน่ง</option>
+          <option value="rank">ลำดับ</option>
+          <option value="term">คำศัพท์</option>
+          <option value="honorific">คำยกย่อง</option>
+          <option value="place">สถานที่</option>
+          <option value="skill">ทักษะ</option>
+          <option value="item">ไอเทม</option>
+          <option value="clan">กลุ่ม/สำนัก</option>
+          <option value="monster">มอนสเตอร์</option>
+        </select>
+        <select id="glossarySortSelect" class="mini-select" onchange="filterGlossary()">
+          <option value="default">เรียง: เพิ่มล่าสุด</option>
+          <option value="korean-az">เกาหลี A→Z</option>
+          <option value="korean-za">เกาหลี Z→A</option>
+          <option value="thai-az">ไทย ก→ฮ</option>
+          <option value="type">ตามประเภท</option>
+        </select>
+        <button class="btn btn-primary btn-sm" onclick="openAddGlossary()">＋ เพิ่มคำ</button>
+        <button class="btn btn-secondary btn-sm" onclick="openAutoGlossary()">🤖 Auto</button>
+        <button class="btn btn-secondary btn-sm" onclick="checkDuplicateGlossary()">🔎 ซ้ำ</button>
+        <button class="btn btn-secondary btn-sm" onclick="openGlossaryQA()">🧪 QA</button>
+        <button class="btn btn-ghost btn-sm" onclick="openConsistencyCheck()">🔗 เช็ค</button>
+        <button class="btn btn-ghost btn-sm" onclick="openGlossaryExport()">📤 Export</button>
+        <button class="btn btn-ghost btn-sm" onclick="openGlossaryCSVImport()">📥 CSV Import</button>
+        <button class="btn btn-ghost btn-sm" onclick="openGlossaryInherit()">🔗 Import จาก WS อื่น</button>
+        <input type="file" id="glossaryCsvFile" accept=".csv,.tsv,.txt" style="display:none" onchange="handleGlossaryCSVImport(event)"/>
+        <span id="glossaryCount" class="count-label"></span>
+      </div>
+      <div id="glossaryDupAlert" style="display:none;padding:8px 12px;background:rgba(194,48,72,0.1);border-bottom:1px solid rgba(194,48,72,0.3);font-size:0.78rem;color:var(--crimson-light)"></div>
+      <div class="glossary-table-wrap">
+        <table class="glossary-table">
+          <thead><tr><th>เกาหลี</th><th>ไทย</th><th>ประเภท</th><th>เพศ</th><th>หมายเหตุ</th><th>ตอนที่พบ</th><th></th></tr></thead>
+          <tbody id="glossaryTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- STYLES TAB -->
+    <div class="tab-content" id="tab-styles" style="display:none">
+      <div class="tab-toolbar">
+        <button class="btn btn-primary btn-sm" onclick="openNewStyle()">＋ สร้าง Style</button>
+        <span class="count-label">Style กำหนด tone และรูปแบบการเขียนของคำแปล</span>
+      </div>
+      <div class="styles-section-label">Style พื้นฐาน</div>
+      <div class="styles-grid" id="builtinStylesGrid"></div>
+      <div class="styles-section-label" style="margin-top:16px">Custom Styles</div>
+      <div class="styles-grid" id="customStylesGrid">
+        <div class="styles-empty">ยังไม่มี — กด ＋ สร้าง Style</div>
+      </div>
+    </div>
+
+    <!-- WORKSPACE SETTINGS TAB -->
+    <!-- MARATHON TAB -->
+    <div class="tab-content" id="tab-marathon" style="display:none">
+      <div class="marathon-layout">
+        <!-- Config bar -->
+        <div class="marathon-config-bar">
+          <div class="mc-badge-row">
+            <div class="mc-badge-item">
+              <span class="mc-badge-label">Preset</span>
+              <span id="mp-preset-badge" class="preset-badge">📖 นิยาย</span>
+            </div>
+            <div class="mc-badge-item">
+              <span class="mc-badge-label">พร้อมกัน</span>
+              <span id="mp-concurrency-badge" class="mc-badge-val">⚡x3</span>
+            </div>
+            <div class="mc-badge-item">
+              <span class="mc-badge-label">วันละ</span>
+              <span id="mp-limit-badge" class="mc-badge-val">100 ตอน/วัน</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="openMarathonConfig()">🔧 ตั้งค่า</button>
+          </div>
+        </div>
+
+        <!-- Today progress -->
+        <div class="mp-progress-section">
+          <div class="mp-today-row">
+            <span class="mp-today-label">วันนี้</span>
+            <span class="mp-today-nums"><span id="mp-today-count">0</span> / <span id="mp-daily-limit-disp">100</span> ตอน</span>
+            <span class="mp-cost-badge" id="mp-cost-today">$0.0000</span>
+          </div>
+          <div class="mp-bar-wrap"><div id="mp-bar" class="mp-bar" style="width:0%"></div></div>
+          <div class="mp-eta" id="mp-eta">Queue: 0 ตอน  |  ETA: —</div>
+        </div>
+
+        <!-- Controls -->
+        <div class="mp-controls">
+          <button class="btn btn-primary" id="mp-start-btn" onclick="marathonStart()">▶ Start</button>
+          <button class="btn btn-secondary" id="mp-pause-btn" onclick="marathonPause()" disabled>⏸ Pause</button>
+          <button class="btn btn-danger" id="mp-stop-btn" onclick="marathonStop()" disabled>⬛ Stop</button>
+        </div>
+
+        <!-- Queue management -->
+        <div class="mp-queue-mgmt">
+          <button class="btn btn-ghost btn-sm" onclick="marathonAddAllPending()">＋ ทุกตอนที่ยังไม่แปล</button>
+          <button class="btn btn-ghost btn-sm" onclick="marathonClearDone()">✓ นำตอนแปลแล้วออก</button>
+          <button class="btn btn-ghost btn-sm" onclick="marathonClearQueue()">🗑 ล้าง Queue</button>
+          <span id="mp-queue-count" class="mp-count-badge">0 ตอนในคิว</span>
+        </div>
+
+        <!-- Active slots -->
+        <div id="mp-slots" class="mp-slots"></div>
+
+        <!-- Log -->
+        <div id="mp-log" class="mp-log"></div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tab-settings-ws" style="display:none">
+      <div class="settings-scroll">
+        <div class="settings-form">
+          <div class="sf-group"><div class="sf-label">ชื่อนิยาย</div><input id="wsEditName" type="text" class="text-input"/></div>
+          <div class="sf-group"><div class="sf-label">คำอธิบาย</div><input id="wsEditDesc" type="text" class="text-input"/></div>
+          <div class="sf-group"><div class="sf-label">Emoji</div><input id="wsEditEmoji" type="text" class="text-input" style="max-width:80px"/></div>
+          <!-- ── Language Settings ── -->
+          <div class="sf-group" style="border-top:1px solid var(--border);padding-top:10px;margin-top:2px">
+            <div class="sf-label" style="margin-bottom:6px">🌐 ภาษาต้นฉบับ / ปลายทาง</div>
+            <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">
+              <div style="flex:1;min-width:140px">
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:3px">ต้นฉบับ (Source)</div>
+                <select id="wsSourceLang" class="select-input">
+                  <option value="ko">🇰🇷 เกาหลี (Korean)</option>
+                  <option value="ja">🇯🇵 ญี่ปุ่น (Japanese)</option>
+                  <option value="zh">🇨🇳 จีนตัวย่อ (Chinese Simplified)</option>
+                  <option value="zh-tw">🇹🇼 จีนตัวเต็ม (Chinese Traditional)</option>
+                  <option value="en">🇺🇸 อังกฤษ (English)</option>
+                  <option value="vi">🇻🇳 เวียดนาม (Vietnamese)</option>
+                  <option value="other">🌍 อื่นๆ (Other)</option>
+                </select>
+              </div>
+              <div style="font-size:1.2rem;color:var(--text-muted);padding-top:18px">→</div>
+              <div style="flex:1;min-width:140px">
+                <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:3px">ปลายทาง (Target)</div>
+                <select id="wsTargetLang" class="select-input">
+                  <option value="th">🇹🇭 ไทย (Thai)</option>
+                  <option value="en">🇺🇸 อังกฤษ (English)</option>
+                  <option value="zh">🇨🇳 จีน (Chinese Simplified)</option>
+                </select>
+              </div>
+            </div>
+            <div style="font-size:0.72rem;color:var(--text-muted);margin-top:5px">Prompt ทั้งหมดจะปรับให้ตรงกับภาษาที่เลือก — คลังศัพท์ยังเก็บในฟิลด์ "korean" แต่แสดงผลตามภาษาต้นฉบับ</div>
+          </div>
+          <div class="sf-group">
+            <div class="sf-label">Translation Preset <span style="font-size:0.72rem;color:var(--text-muted)">(ใช้กับแท็บ ⚡แปล, ⚡Batch และ 🏃Marathon)</span></div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <select id="wsPresetSelect" class="select-input" style="flex:1">
+                <option value="literary">📖 นิยาย — Literary (ภาษาวรรณกรรม)</option>
+                <option value="draft">⚡ ฉบับร่าง — Draft (เร็ว ประหยัด)</option>
+                <option value="dialogue">🎭 บทสนทนา — Dialogue (เน้น dialog)</option>
+                <option value="faithful">🔤 แปลตรง — Faithful (ใกล้ต้นฉบับ)</option>
+                <option value="webtoon">📱 เว็บตูน — Webtoon (สั้น มือถือ)</option>
+                <option value="mtlFix">🔧 ตรวจ MTL — MTL Fix (แก้ machine translation)</option>
+              </select>
+              <button class="btn btn-ghost btn-sm" onclick="openPresetEditor()" title="แก้ไข Prompt ของ Preset">✏ Customize</button>
+            </div>
+          </div>
+          <div class="sf-group"><div class="sf-label">โมเดลแปล</div>
+            <select id="wsTranslateModel" class="select-input">
+              <optgroup label="── Google ──">
+                <option value="google/gemini-2.5-flash">Gemini 2.5 Flash 🔥</option>
+                <option value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+                <option value="google/gemini-2.5-pro">Gemini 2.5 Pro</option>
+                <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
+                <option value="google/gemini-1.5-flash">Gemini 1.5 Flash</option>
+              </optgroup>
+              <optgroup label="── OpenAI ──">
+                <option value="openai/gpt-5-nano">GPT-5 Nano ✨</option>
+                <option value="openai/gpt-5">GPT-5</option>
+                <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
+                <option value="openai/gpt-4o-mini">GPT-4o Mini</option>
+                <option value="openai/gpt-4o">GPT-4o</option>
+                <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+              </optgroup>
+              <optgroup label="── DeepSeek ──">
+                <option value="deepseek/deepseek-v3.2">DeepSeek V3.2 🆕</option>
+                <option value="deepseek/deepseek-chat-v3-0324">DeepSeek V3 (Mar)</option>
+                <option value="deepseek/deepseek-chat">DeepSeek V3</option>
+                <option value="deepseek/deepseek-r1">DeepSeek R1</option>
+              </optgroup>
+              <optgroup label="── xAI ──">
+                <option value="x-ai/grok-4">Grok 4</option>
+                <option value="x-ai/grok-4-fast">Grok 4 Fast</option>
+              </optgroup>
+              <optgroup label="── อื่นๆ ──">
+                <option value="anthropic/claude-haiku-4.5">Claude Haiku 4.5</option>
+                <option value="anthropic/claude-3-haiku">Claude Haiku 3</option>
+                <option value="meta-llama/llama-3.3-70b-instruct:free">Llama 3.3 70B (ฟรี)</option>
+                <option value="meta-llama/llama-4-scout:free">Llama 4 Scout (ฟรี)</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="sf-group">
+            <div class="sf-label">Temperature <span id="wsTempVal">0.7</span></div>
+            <input type="range" id="wsTemp" min="0" max="1" step="0.1" value="0.7" class="range-input" oninput="document.getElementById('wsTempVal').textContent=this.value"/>
+          </div>
+          <div class="sf-group">
+            <div class="sf-label">Auto Glossary หลังแปล</div>
+            <label class="toggle-mini" style="gap:8px">
+              <input type="checkbox" id="wsAutoGlossary" checked/>
+              <span style="font-size:0.78rem;color:var(--text-secondary)">เพิ่มคำศัพท์ใหม่อัตโนมัติทุกครั้งที่แปลเสร็จ</span>
+            </label>
+          </div>
+
+          <!-- ── Translation Context Memory ── -->
+          <div class="sf-group" style="border-top:1px solid var(--border);padding-top:10px;margin-top:2px">
+            <div class="sf-label" style="margin-bottom:6px">
+              🧠 Context Memory
+              <span style="font-size:0.70rem;color:var(--text-muted);font-weight:400"> — AI จดจำเรื่องราวแต่ละตอนเพื่อแปลต่อเนื่อง</span>
+            </div>
+            <label class="toggle-mini" style="gap:8px;margin-bottom:8px;cursor:pointer">
+              <input type="checkbox" id="wsCtxEnabled" onchange="ctxToggleEnabled(this.checked)"/>
+              <span style="font-size:0.78rem;color:var(--text-secondary)">เปิดใช้ Context Memory (สร้าง AI summary หลังแปลแต่ละตอน)</span>
+            </label>
+            <div id="wsCtxOptions" style="display:none;padding-left:2px">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;flex-wrap:wrap">
+                <span style="font-size:0.78rem;color:var(--text-secondary)">Token budget:</span>
+                <select id="wsCtxMaxTokens" class="select-input" style="width:auto;font-size:0.78rem" onchange="ctxSetMaxTokens(this.value)">
+                  <option value="500">500 (~4 ตอน)</option>
+                  <option value="1000">1000 (~8 ตอน)</option>
+                  <option value="1500" selected>1500 (~12 ตอน)</option>
+                  <option value="2000">2000 (~16 ตอน)</option>
+                  <option value="3000">3000 (~25 ตอน)</option>
+                </select>
+                <span id="wsCtxStatus" style="font-size:0.70rem;color:var(--text-muted)">ยังไม่มี summary</span>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <button class="btn btn-secondary btn-sm" onclick="openContextManager()">📋 ดู/แก้ไข Summaries</button>
+                <button class="btn btn-ghost btn-sm" onclick="ctxResetAll()" style="color:var(--crimson-light)">🗑 ล้าง Context</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Task Model Assignment ── -->
+          <div class="sf-group" style="border-top:1px solid var(--border);padding-top:10px;margin-top:2px">
+            <div class="sf-label" style="margin-bottom:6px">
+              🤖 กำหนดโมเดลต่องาน
+              <span style="font-size:0.70rem;color:var(--text-muted);font-weight:400"> — ปล่อยว่าง = ใช้โมเดลแปลหลักข้างบน</span>
+            </div>
+            <div id="taskModelGrid" style="display:grid;gap:6px"></div>
+          </div>
+
+          <!-- ── Custom Models Management ── -->
+          <div class="sf-group" style="border-top:1px solid var(--border);padding-top:10px;margin-top:2px">
+            <div class="sf-label" style="margin-bottom:6px">
+              ➕ Custom Models
+              <span style="font-size:0.70rem;color:var(--text-muted);font-weight:400"> — เพิ่มโมเดลจาก OpenRouter ที่ไม่อยู่ในรายการ</span>
+            </div>
+            <div id="customModelsList" style="margin-bottom:8px"></div>
+            <button class="btn btn-ghost btn-sm" onclick="openAddCustomModelModal()">＋ เพิ่ม Custom Model</button>
+          </div>
+
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:4px">
+            <button class="btn btn-primary btn-sm" onclick="saveWsSettings()">💾 บันทึก</button>
+            <button class="btn btn-ghost btn-sm" onclick="exportWorkspaceJSON()">📤 Export JSON</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteCurrentWorkspace()">🗑 ลบ</button>
+          </div>
+          <div style="border-top:1px solid var(--border);margin-top:12px;padding-top:12px">
+            <div class="sf-label" style="margin-bottom:8px">◈ เครื่องมือจัดการเนื้อหา (ทั้ง Workspace)</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn btn-secondary btn-sm" onclick="cleanAllSourceTexts()">🧹 Clean Source ทุกตอน</button>
+              <button class="btn btn-secondary btn-sm" onclick="addLineBreaksAllChapters()">📐 Add Line Break ทุกตอน</button>
+              <button class="btn btn-secondary btn-sm" onclick="addOneLineAllChapters()">📏 Add 1 Line ทุกตอน</button>
+            </div>
+          </div>
+        </div>
+        <div class="cost-section">
+          <div class="sf-label" style="margin-bottom:6px">◈ ต้นทุน API — Workspace นี้</div>
+          <div class="cost-grid" style="margin-bottom:10px">
+            <div class="cost-item hl"><span class="cost-lbl">USD (WS นี้)</span><span id="wsOwnCostUSD" class="cost-val">$0.0000</span></div>
+            <div class="cost-item"><span class="cost-lbl">Tokens (WS นี้)</span><span id="wsOwnTokens" class="cost-val">0</span></div>
+          </div>
+          <div class="sf-label" style="margin-bottom:6px;color:var(--text-muted)">รวมทุก Workspace (session นี้)</div>
+          <div class="cost-grid">
+            <div class="cost-item"><span class="cost-lbl">Tokens ทั้งหมด</span><span id="totalTokens" class="cost-val">0</span></div>
+            <div class="cost-item"><span class="cost-lbl">Input</span><span id="inputTokens" class="cost-val">0</span></div>
+            <div class="cost-item"><span class="cost-lbl">Output</span><span id="outputTokens" class="cost-val">0</span></div>
+            <div class="cost-item hl"><span class="cost-lbl">USD รวม</span><span id="costUSD" class="cost-val">$0.0000</span></div>
+            <div class="cost-item"><span class="cost-lbl">THB รวม</span><span id="costTHB" class="cost-val">฿0.00</span></div>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" onclick="resetCosts()">รีเซ็ตรวม</button>
+            <button class="btn btn-ghost btn-sm" onclick="resetWsCosts()">รีเซ็ต WS นี้</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODALS -->
+<div class="modal-backdrop" id="modal-new-ws">
+  <div class="modal">
+    <div class="modal-header"><span>＋ สร้าง Workspace ใหม่</span><button class="icon-btn" onclick="closeModal('modal-new-ws')">✕</button></div>
+    <div class="modal-body">
+      <div class="sf-group"><div class="sf-label">ชื่อนิยาย *</div><input id="newWsName" type="text" class="text-input" placeholder="เช่น การกลับมาของเทพดาบ"/></div>
+      <div class="sf-group" style="display:flex;gap:8px">
+        <div style="flex:0 0 80px"><div class="sf-label">Emoji</div><input id="newWsEmoji" type="text" class="text-input" placeholder="📖"/></div>
+        <div style="flex:1"><div class="sf-label">คำอธิบาย</div><input id="newWsDesc" type="text" class="text-input" placeholder="ไม่บังคับ"/></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-ws')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="createWorkspace()">สร้าง</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-new-chapter">
+  <div class="modal">
+    <div class="modal-header"><span>＋ เพิ่มตอนใหม่</span><button class="icon-btn" onclick="closeModal('modal-new-chapter')">✕</button></div>
+    <div class="modal-body">
+      <div class="sf-group"><div class="sf-label">ชื่อตอน *</div><input id="newChTitle" type="text" class="text-input" placeholder="ตอนที่ 1 — การตื่น"/></div>
+      <div class="sf-group"><div class="sf-label">เลขตอน</div><input id="newChNum" type="number" class="text-input" placeholder="1" style="max-width:100px"/></div>
+      <div class="sf-group"><div class="sf-label">หมายเหตุ</div><input id="newChNotes" type="text" class="text-input" placeholder="หมายเหตุ (ไม่บังคับ)"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-chapter')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="addChapter()">เพิ่ม</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-view-chapter">
+  <div class="modal modal-wide">
+    <div class="modal-header"><span id="viewChTitle">ดูตอน</span><button class="icon-btn" onclick="closeModal('modal-view-chapter')">✕</button></div>
+    <div class="modal-body">
+      <!-- Chapter navigation bar -->
+      <div id="viewChNav" style="display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:6px 10px;background:var(--bg-deep);border-radius:var(--radius);border:1px solid var(--border)">
+        <button class="btn btn-ghost btn-sm" id="viewChPrevBtn" onclick="navigateChapter(-1)" style="padding:3px 10px;font-size:0.8rem">◀ ตอนก่อน</button>
+        <span id="viewChNavLabel" style="flex:1;text-align:center;font-size:0.78rem;color:var(--text-muted)"></span>
+        <button class="btn btn-ghost btn-sm" id="viewChNextBtn" onclick="navigateChapter(1)" style="padding:3px 10px;font-size:0.8rem">ตอนถัดไป ▶</button>
+      </div>
+      <div class="chapter-view-grid">
+        <div><div class="sf-label">ต้นฉบับ</div><textarea id="viewChSource" class="editor-ta" rows="10"></textarea></div>
+        <div><div class="sf-label">คำแปล</div><textarea id="viewChTranslation" class="editor-ta" rows="10"></textarea></div>
+      </div>
+      <div class="sf-group" style="margin-top:8px"><div class="sf-label">หมายเหตุ</div><input id="viewChNotes" type="text" class="text-input"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" onclick="deleteCurrentChapter()" style="margin-right:auto">🗑 ลบ</button>
+      <button class="btn btn-ghost btn-sm" onclick="openSplitChapter()">✂ Split</button>
+      <button class="btn btn-ghost btn-sm" onclick="openMergeChapter()">🔗 Merge</button>
+      <button class="btn btn-secondary" onclick="loadChapterToTranslate()">⚡ โหลดแปล</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-view-chapter')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveChapter()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-add-glossary" style="z-index:400">
+  <div class="modal">
+    <div class="modal-header"><span id="glossaryModalTitle">＋ เพิ่มคำศัพท์</span><button class="icon-btn" onclick="closeModal('modal-add-glossary')">✕</button></div>
+    <div class="modal-body">
+      <div class="sf-group"><div class="sf-label">ภาษาเกาหลี *</div><input id="gKorean" type="text" class="text-input" placeholder="검제"/></div>
+      <div class="sf-group"><div class="sf-label">ภาษาไทย *</div><input id="gThai" type="text" class="text-input" placeholder="จักรพรรดิดาบ"/></div>
+      <div class="sf-group"><div class="sf-label">ประเภท</div>
+        <select id="gType" class="select-input" onchange="document.getElementById('gGenderGroup').style.display=this.value==='character'?'':'none';if(this.value!=='character')document.getElementById('gGender').value=''">
+          <option value="term">คำศัพท์ทั่วไป</option>
+          <option value="character">ตัวละคร</option>
+          <option value="title">ตำแหน่ง/ยศ</option>
+          <option value="rank">ลำดับขั้น</option>
+          <option value="honorific">คำยกย่อง</option>
+          <option value="place">สถานที่</option>
+          <option value="skill">ทักษะ/วิชา</option>
+          <option value="item">ไอเทม/วัตถุ</option>
+          <option value="clan">กลุ่ม/สำนัก</option>
+          <option value="monster">มอนสเตอร์/สัตว์</option>
+        </select>
+      </div>
+      <div class="sf-group" id="gGenderGroup" style="display:none"><div class="sf-label">เพศ <span style="font-size:0.72rem;color:var(--text-muted)">(ช่วย AI เลือกสรรพนาม)</span></div>
+        <select id="gGender" class="select-input">
+          <option value="">— ไม่ระบุ —</option>
+          <option value="male">ชาย (เขา/พระเอก/ผม)</option>
+          <option value="female">หญิง (เธอ/นางเอก/ฉัน)</option>
+          <option value="neutral">ไม่แน่ชัด / กลาง</option>
+        </select>
+      </div>
+      <div class="sf-group"><div class="sf-label">หมายเหตุ</div><input id="gNote" type="text" class="text-input" placeholder="Emperor of Swords"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-glossary')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveGlossaryEntry()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-new-style">
+  <div class="modal">
+    <div class="modal-header"><span id="styleModalTitle">＋ สร้าง Style</span><button class="icon-btn" onclick="closeModal('modal-new-style')">✕</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:8px">
+        <div class="sf-group" style="flex:0 0 70px"><div class="sf-label">Emoji</div><input id="styleEmoji" type="text" class="text-input" placeholder="🖊"/></div>
+        <div class="sf-group" style="flex:1"><div class="sf-label">ชื่อ *</div><input id="styleName" type="text" class="text-input" placeholder="เช่น กำลังภายใน"/></div>
+      </div>
+      <div class="sf-group"><div class="sf-label">Prompt *</div><textarea id="stylePrompt" class="editor-ta" rows="5" placeholder="เช่น: แปลแบบสำนวนไทยกำลังภายใน ใช้คำศัพท์ย้อนยุค..."></textarea></div>
+      <div class="sf-group">
+        <div class="sf-label">ทดสอบ (ข้อความเกาหลี)</div>
+        <textarea id="styleTestText" class="editor-ta" rows="2" placeholder="그는 검을 들었다..."></textarea>
+        <button class="btn btn-secondary btn-sm" style="margin-top:6px" onclick="previewStyle()">▶ ทดสอบ</button>
+        <div id="stylePreviewResult" class="style-preview-box" style="display:none"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-danger btn-sm" id="deleteStyleBtn" style="display:none;margin-right:auto" onclick="deleteStyle()">🗑 ลบ</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-new-style')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveStyle()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-settings">
+  <div class="modal">
+    <div class="modal-header"><span>⚙ ตั้งค่า API Key</span><button class="icon-btn" onclick="closeModal('modal-settings')">✕</button></div>
+    <div class="modal-body">
+      <div class="sf-group">
+        <div class="sf-label">OpenRouter API Key</div>
+        <input id="settingsApiKey" type="password" class="text-input" placeholder="sk-or-v1-..."/>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">สมัครฟรีที่ openrouter.ai/keys</div>
+      </div>
+      <div class="sf-group" style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-secondary btn-sm" onclick="testApiKey()">▶ ทดสอบ</button>
+        <span id="apiTestResult" style="font-size:0.8rem"></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-settings')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveApiKey()">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- Add Custom Model Modal -->
+<div class="modal-backdrop" id="modal-add-custom-model" style="z-index:500">
+  <div class="modal">
+    <div class="modal-header">
+      <span>➕ เพิ่ม Custom Model</span>
+      <button class="icon-btn" onclick="closeModal('modal-add-custom-model')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sf-group">
+        <div class="sf-label">ชื่อแสดงผล</div>
+        <input id="cmName" type="text" class="text-input" placeholder="เช่น Claude Sonnet 4.5"/>
+      </div>
+      <div class="sf-group">
+        <div class="sf-label">Model ID (OpenRouter) *</div>
+        <input id="cmId" type="text" class="text-input" placeholder="เช่น anthropic/claude-sonnet-4-5"/>
+        <div style="font-size:0.71rem;color:var(--text-muted);margin-top:3px">ดู ID ได้ที่ openrouter.ai/models</div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div class="sf-group" style="flex:1">
+          <div class="sf-label">ราคา Input ($/1M tokens)</div>
+          <input id="cmCostIn" type="number" class="text-input" placeholder="0.00" min="0" step="0.01"/>
+        </div>
+        <div class="sf-group" style="flex:1">
+          <div class="sf-label">ราคา Output ($/1M tokens)</div>
+          <input id="cmCostOut" type="number" class="text-input" placeholder="0.00" min="0" step="0.01"/>
+        </div>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text-muted)">ราคาใช้คำนวณต้นทุน (ไม่บังคับ — กรอก 0 ถ้าไม่รู้)</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-add-custom-model')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveCustomModelEntry()">เพิ่มโมเดล</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-autoglossary">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>🤖 Auto Glossary — AI สร้างคลังศัพท์</span>
+      <button class="icon-btn" onclick="closeModal('modal-autoglossary')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Source selector tabs -->
+      <div style="display:flex;gap:4px;margin-bottom:10px">
+        <button class="btn btn-secondary btn-sm" id="agTabManual" onclick="agSwitchTab('manual')" style="border-bottom:2px solid var(--gold);color:var(--gold)">✏ Manual</button>
+        <button class="btn btn-ghost btn-sm" id="agTabChapters" onclick="agSwitchTab('chapters')">📚 เลือกตอน</button>
+      </div>
+
+      <!-- Manual input -->
+      <div id="agPanelManual">
+        <div class="sf-group">
+          <div class="sf-label">ข้อความเกาหลีต้นฉบับ</div>
+          <textarea id="agSourceText" class="editor-ta" rows="6" placeholder="วางข้อความเกาหลีที่นี่เพื่อให้ AI วิเคราะห์คำศัพท์..."></textarea>
+        </div>
+      </div>
+
+      <!-- Chapter picker -->
+      <div id="agPanelChapters" style="display:none">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span class="sf-label">เลือกตอนที่ต้องการวิเคราะห์</span>
+          <div style="display:flex;gap:4px">
+            <button class="btn-xs" onclick="agSelectAllChapters()">เลือกทั้งหมด</button>
+            <button class="btn-xs" onclick="agDeselectAllChapters()">ยกเลิก</button>
+          </div>
+        </div>
+        <div id="agChapterList" style="max-height:200px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:var(--bg-deep)">
+          <div style="font-size:0.78rem;color:var(--text-muted);padding:6px">ยังไม่มีตอน</div>
+        </div>
+        <div id="agChaptersInfo" style="font-size:0.72rem;color:var(--text-muted);margin-top:5px"></div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:10px">
+        <button class="btn btn-primary btn-sm" id="agRunBtn" onclick="runAutoGlossary()">🤖 วิเคราะห์</button>
+        <select id="agModel" class="mini-select">
+          <option value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
+          <option value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+          <option value="deepseek/deepseek-v3.2">DeepSeek V3.2</option>
+          <option value="deepseek/deepseek-chat">DeepSeek V3</option>
+          <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
+          <option value="openai/gpt-5-nano">GPT-5 Nano</option>
+          <option value="x-ai/grok-4">Grok 4</option>
+        </select>
+        <button class="btn btn-ghost btn-sm" onclick="agTogglePromptEditor()" id="agPromptToggleBtn" title="แก้ไข Prompt ที่ใช้วิเคราะห์">✏ Prompt</button>
+        <span style="font-size:0.74rem;color:var(--text-muted)">เลือกโมเดลสำหรับ Auto Glossary</span>
+        <span id="agStatus" style="font-size:0.78rem;color:var(--gold)"></span>
+      </div>
+      <!-- Prompt editor (hidden by default) -->
+      <div id="agPromptEditorWrap" style="display:none;margin-top:8px;border:1px solid var(--border-glow);border-radius:var(--radius);background:var(--bg-deep);padding:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+          <span class="sf-label" style="margin:0">✏ แก้ไข Auto Glossary Prompt</span>
+          <div style="display:flex;gap:6px">
+            <button class="btn-xs" onclick="agResetPrompt()" title="คืนค่า default">↺ Reset</button>
+            <button class="btn-xs" style="background:rgba(201,168,76,0.15);border-color:var(--gold-dim);color:var(--gold)" onclick="agSavePrompt()">💾 บันทึก Prompt</button>
+          </div>
+        </div>
+        <textarea id="agPromptEditor" class="editor-ta" rows="8" style="font-size:0.78rem;font-family:var(--font-mono);line-height:1.6;resize:vertical"></textarea>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:5px">ตัวแปรที่ใช้: <code style="color:var(--gold)">{existing}</code> = คำที่มีแล้ว &nbsp;|&nbsp; <code style="color:var(--gold)">{text}</code> = ข้อความต้นฉบับ</div>
+      </div>
+      <div id="agResults" style="display:none;margin-top:10px">
+        <div class="sf-label" style="margin-bottom:6px">คำที่พบ — เลือกที่ต้องการเพิ่ม</div>
+        <div id="agResultList" class="ag-result-list"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn btn-primary btn-sm" onclick="addSelectedGlossary()">＋ เพิ่มที่เลือก</button>
+          <button class="btn btn-ghost btn-sm" onclick="selectAllAg()">เลือกทั้งหมด</button>
+          <button class="btn btn-ghost btn-sm" onclick="deselectAllAg()">ยกเลิกทั้งหมด</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-autoglossary')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-findreplace">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>🔍 Find &amp; Replace</span>
+      <button class="icon-btn" onclick="closeModal('modal-findreplace')">✕</button>
+    </div>
+    <div class="modal-body" style="gap:8px">
+      <div style="display:flex;gap:6px;margin-bottom:2px">
+        <div class="sf-group" style="flex:1">
+          <div class="sf-label">ค้นหา</div>
+          <input id="frFind" type="text" class="text-input" placeholder="คำที่ต้องการค้นหา..." oninput="frLiveSearch()" onkeydown="frKeyDown(event)"/>
+        </div>
+        <div class="sf-group" style="flex:1">
+          <div class="sf-label">แทนที่ด้วย</div>
+          <input id="frReplace" type="text" class="text-input" placeholder="คำแทนที่..."/>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:4px 0">
+        <label class="toggle-mini"><input type="checkbox" id="frCaseSensitive" onchange="frLiveSearch()"/> Case Sensitive</label>
+        <label class="toggle-mini"><input type="checkbox" id="frWholeWord" onchange="frLiveSearch()"/> Whole Word</label>
+        <label class="toggle-mini"><input type="checkbox" id="frRegex" onchange="frLiveSearch()"/> Regex</label>
+        <select id="frScope" class="mini-select" onchange="frLiveSearch()" style="margin-left:auto">
+          <option value="current">คำแปลปัจจุบัน</option>
+          <option value="workspace">ทุกตอนใน Workspace</option>
+        </select>
+      </div>
+      <!-- match nav -->
+      <div style="display:flex;align-items:center;gap:6px;padding:4px 0">
+        <button class="icon-btn-sm" onclick="frNavPrev()" title="ก่อนหน้า">‹</button>
+        <button class="icon-btn-sm" onclick="frNavNext()" title="ถัดไป">›</button>
+        <span id="frMatchInfo" style="font-size:0.78rem;color:var(--text-muted);flex:1">พิมพ์เพื่อค้นหา</span>
+        <div id="frHistoryWrap" style="display:flex;gap:4px;flex-wrap:wrap;max-width:260px"></div>
+      </div>
+      <!-- workspace results preview -->
+      <div id="frWsResults" style="display:none;max-height:120px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:var(--bg-deep);font-size:0.75rem"></div>
+    </div>
+    <div class="modal-footer" style="gap:6px">
+      <button class="btn btn-ghost btn-sm" onclick="frFindAll()">🔍 นับ</button>
+      <button class="btn btn-secondary btn-sm" onclick="frReplaceCurrent()">แทนที่ครั้งนี้</button>
+      <button class="btn btn-primary btn-sm" onclick="frReplaceAll()">แทนที่ทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<!-- Review Search Modal -->
+<div class="modal-backdrop" id="modal-review-search">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>🔎 ตรวจทบทวนคำ</span>
+      <button class="icon-btn" onclick="rsSaveAndClose()">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px">
+      <!-- Search row -->
+      <div style="display:flex;gap:6px;align-items:flex-end">
+        <div class="sf-group" style="flex:1;margin:0">
+          <div class="sf-label">ค้นหาคำ</div>
+          <input id="rsFind" type="text" class="text-input" placeholder="พิมพ์คำที่ต้องการตรวจ..." onkeydown="if(event.key==='Enter')rsSearch()"/>
+        </div>
+        <label class="toggle-mini" style="margin-bottom:3px;white-space:nowrap"><input type="checkbox" id="rsCaseSensitive"/> Case</label>
+        <label class="toggle-mini" style="margin-bottom:3px;white-space:nowrap"><input type="checkbox" id="rsWholeWord"/> Word</label>
+        <label class="toggle-mini" style="margin-bottom:3px;white-space:nowrap"><input type="checkbox" id="rsRegex"/> Regex</label>
+        <button class="btn btn-primary btn-sm" style="margin-bottom:1px" onclick="rsSearch()">ค้นหา</button>
+      </div>
+
+      <!-- Progress bar + info -->
+      <div id="rsProgressBar" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">
+          <span id="rsCountInfo" style="font-size:0.80rem;color:var(--gold);font-weight:600"></span>
+          <span id="rsChapterInfo" style="font-size:0.72rem;color:var(--text-muted);max-width:55%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+        </div>
+        <div style="background:var(--surface-2);border-radius:4px;height:5px;overflow:hidden">
+          <div id="rsProgressFill" style="height:100%;background:var(--gold);transition:width 0.25s;width:0%"></div>
+        </div>
+      </div>
+
+      <!-- Context display -->
+      <div id="rsContextWrap" style="display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div class="sf-label" style="margin:0">บริบท</div>
+          <button id="rsEditToggleBtn" class="btn-xs" onclick="rsToggleEditMode()"
+            title="แก้ไขข้อความในบริบทโดยตรง (ไม่ใช่แค่คำที่ค้นหา)">✏ แก้ไขตรงๆ</button>
+        </div>
+        <!-- Read-only highlight view (default) -->
+        <div id="rsContextDisplay"
+          style="background:var(--bg-deep);border:1px solid var(--border);border-radius:var(--radius);
+                 padding:10px 14px;font-size:0.83rem;line-height:1.9;color:var(--text-secondary);
+                 white-space:pre-wrap;word-break:break-word;min-height:72px;max-height:200px;overflow-y:auto"></div>
+        <!-- Free-edit textarea (edit mode) -->
+        <textarea id="rsContextEdit"
+          style="display:none;width:100%;box-sizing:border-box;background:var(--bg-deep);
+                 border:2px solid var(--gold);border-radius:var(--radius);padding:10px 14px;
+                 font-size:0.83rem;line-height:1.9;color:var(--text-primary);
+                 white-space:pre-wrap;word-break:break-word;min-height:110px;max-height:280px;
+                 resize:vertical;font-family:inherit"
+          placeholder="แก้ไขข้อความโดยตรง..."></textarea>
+        <div id="rsEditHint" style="display:none;font-size:0.70rem;color:var(--gold);margin-top:4px;padding-left:2px">
+          ✏ โหมดแก้ไขอิสระ — แก้ได้ทุกอย่างในช่วงนี้ · กด "💾 บันทึก + ถัดไป" เมื่อเสร็จ
+        </div>
+      </div>
+
+      <!-- Replace input (normal mode only) -->
+      <div id="rsReplaceWrap" style="display:none;gap:6px;align-items:flex-end">
+        <div class="sf-group" style="flex:1;margin:0">
+          <div class="sf-label">แทนที่ด้วย <span style="font-size:0.70rem;color:var(--text-muted)">(ว่าง = ลบคำ)</span></div>
+          <input id="rsReplaceInput" type="text" class="text-input"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey)rsReplaceAndNext();else if(event.key==='Tab'){event.preventDefault();rsSkip();}"/>
+        </div>
+        <div style="font-size:0.68rem;color:var(--text-muted);padding-bottom:4px;white-space:nowrap">Enter=แทนที่ · Tab=ข้าม</div>
+      </div>
+
+      <!-- End state message -->
+      <div id="rsEndMsg" style="display:none;text-align:center;padding:12px 0;font-size:0.84rem;color:#4caf50">
+        ✓ ตรวจครบทุก occurrence แล้ว — กด "บันทึก &amp; ปิด" เพื่อบันทึกการเปลี่ยนแปลง
+      </div>
+    </div>
+
+    <div class="modal-footer" style="justify-content:space-between">
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="rsNavPrev()">‹ ก่อนหน้า</button>
+        <button id="rsSaveBtn" class="btn btn-secondary btn-sm" onclick="rsSaveAndClose()" style="display:none">💾 บันทึก &amp; ปิด</button>
+      </div>
+      <div style="display:flex;gap:6px">
+        <button id="rsSkipBtn" class="btn btn-ghost btn-sm" onclick="rsSkip()">ข้ามไป ›</button>
+        <button id="rsReplaceBtn" class="btn btn-primary btn-sm" onclick="rsReplaceAndNext()">แทนที่ + ถัดไป ›</button>
+        <button id="rsSaveContextBtn" class="btn btn-primary btn-sm" onclick="rsSaveContextAndNext()" style="display:none">💾 บันทึก + ถัดไป ›</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-consistency">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>🔗 ตรวจความสอดคล้อง</span>
+      <button class="icon-btn" onclick="closeModal('modal-consistency')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sf-group">
+        <div class="sf-label">คำแปลที่ต้องการตรวจ</div>
+        <textarea id="ccTranslation" class="editor-ta" rows="5" placeholder="วางคำแปลภาษาไทยที่นี่..."></textarea>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="btn btn-primary btn-sm" id="ccRunBtn" onclick="runConsistencyCheck()">🔗 ตรวจสอบ</button>
+        <span style="font-size:0.74rem;color:var(--text-muted)">เช็คชื่อตัวละครกับคลังศัพท์ Workspace</span>
+      </div>
+      <div id="ccResults" style="display:none;margin-top:12px">
+        <div class="cc-score-bar" id="ccScoreBar"></div>
+        <div id="ccIssueList" class="cc-issue-list"></div>
+        <div id="ccSuggestions" class="cc-suggestions"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-consistency')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-export">
+  <div class="modal">
+    <div class="modal-header">
+      <span>📤 Export คำแปล</span>
+      <button class="icon-btn" onclick="closeModal('modal-export')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="export-section-label">📄 Export คำแปลปัจจุบัน</div>
+      <div class="export-btn-row">
+        <button class="export-btn" onclick="exportCurrentTXT()">
+          <span class="export-icon">📝</span>
+          <span class="export-label">TXT</span>
+          <span class="export-desc">ไฟล์ข้อความธรรมดา</span>
+        </button>
+        <button class="export-btn" onclick="exportCurrentDOCX()">
+          <span class="export-icon">📄</span>
+          <span class="export-label">DOCX</span>
+          <span class="export-desc">Microsoft Word</span>
+        </button>
+      </div>
+      <div class="export-section-label" style="margin-top:14px" id="wsExportLabel"></div>
+      <div class="export-btn-row" id="wsExportBtns">
+        <button class="export-btn" onclick="exportWorkspaceTXT()">
+          <span class="export-icon">📚</span>
+          <span class="export-label">TXT (ทั้ง WS)</span>
+          <span class="export-desc">ทุกตอนในนิยาย</span>
+        </button>
+        <button class="export-btn" onclick="exportWorkspaceDOCX()">
+          <span class="export-icon">📘</span>
+          <span class="export-label">DOCX (ทั้ง WS)</span>
+          <span class="export-desc">Word รวมทุกตอน</span>
+        </button>
+        <button class="export-btn" onclick="exportWorkspaceZIP()">
+          <span class="export-icon">🗜</span>
+          <span class="export-label">ZIP (ทั้ง WS)</span>
+          <span class="export-desc">แยกไฟล์ต่อตอน</span>
+        </button>
+        <button class="export-btn" onclick="exportWorkspaceJSON()">
+          <span class="export-icon">💾</span>
+          <span class="export-label">JSON (Backup)</span>
+          <span class="export-desc">สำรองข้อมูล</span>
+        </button>
+      </div>
+      <div class="export-section-label" style="margin-top:14px">📋 Export ตอนที่เลือก</div>
+      <div class="export-btn-row">
+        <button class="export-btn" onclick="openExportSelect('txt')">
+          <span class="export-icon">📝</span>
+          <span class="export-label">TXT (เลือกตอน)</span>
+          <span class="export-desc">เลือกตอนที่ต้องการ</span>
+        </button>
+        <button class="export-btn" onclick="openExportSelect('docx')">
+          <span class="export-icon">📄</span>
+          <span class="export-label">DOCX (เลือกตอน)</span>
+          <span class="export-desc">เลือกตอนที่ต้องการ</span>
+        </button>
+        <button class="export-btn" onclick="openExportSelect('zip')">
+          <span class="export-icon">🗜</span>
+          <span class="export-label">ZIP (เลือกตอน)</span>
+          <span class="export-desc">แยกไฟล์ต่อตอน</span>
+        </button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-export')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-load-chapter">
+  <div class="modal">
+    <div class="modal-header"><span>📂 โหลดตอนมาแปล</span><button class="icon-btn" onclick="closeModal('modal-load-chapter')">✕</button></div>
+    <div class="modal-body">
+      <div class="sf-label" style="margin-bottom:8px">เลือกตอนที่ต้องการโหลดข้อความต้นฉบับ</div>
+      <div id="loadChapterList" style="display:flex;flex-direction:column;gap:4px;max-height:320px;overflow-y:auto"></div>
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-top:6px">⚠ จะแทนที่ข้อความต้นฉบับปัจจุบัน</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-load-chapter')">ยกเลิก</button>
+    </div>
+  </div>
+</div>
+
+
+<div class="modal-backdrop" id="modal-glossary-qa">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>🧪 QA Glossary — ตรวจคุณภาพคลังศัพท์</span>
+      <button class="icon-btn" onclick="closeModal('modal-glossary-qa')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px">
+        <button class="btn btn-primary btn-sm" id="qaGlossaryRunBtn" onclick="runGlossaryQA()">🤖 ตรวจ QA ด้วย AI</button>
+        <select id="qaGlossaryModel" class="mini-select">
+          <option value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
+          <option value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+          <option value="deepseek/deepseek-v3.2">DeepSeek V3.2</option>
+          <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
+        </select>
+        <label class="toggle-mini"><input type="checkbox" id="qaIncludeAI" checked/> ตรวจคำน่าสงสัย (AI)</label>
+        <span id="qaGlossaryStatus" style="font-size:0.78rem;color:var(--gold)"></span>
+      </div>
+      <div id="qaGlossaryProgress" style="display:none" class="qa-progress">
+        <div class="progress-label-row"><span id="qaProgressLabel">กำลังตรวจ...</span><span id="qaProgressPct">0%</span></div>
+        <div class="progress-track"><div class="progress-fill" id="qaProgressFill"></div></div>
+      </div>
+      <!-- Select toolbar (shows after results loaded) -->
+      <div id="qaSelectToolbar" style="display:none;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 0;border-bottom:1px solid var(--border);margin-bottom:8px">
+        <input type="checkbox" id="qaSelectAll" style="accent-color:var(--gold)" onchange="qaToggleSelectAll(this.checked)" title="เลือก/ยกเลิกทั้งหมด"/>
+        <span style="font-size:0.74rem;color:var(--text-muted)" id="qaSelectedLabel">0 รายการที่เลือก</span>
+        <div style="margin-left:auto;display:flex;gap:6px">
+          <button class="btn-xs" onclick="qaSelectByType('review,note_missing')">เฉพาะน่าสงสัย</button>
+          <button class="btn-xs" onclick="qaSelectByType('dup_thai,conflict')">เฉพาะซ้ำ/ขัดแย้ง</button>
+          <button class="btn-xs" onclick="qaSelectAll_fn()">ทั้งหมด</button>
+          <button class="btn-xs" onclick="qaDeselectAll()">ยกเลิก</button>
+        </div>
+      </div>
+      <div id="qaGlossaryResults" style="display:none">
+        <div class="qa-summary-bar" id="qaSummaryBar"></div>
+        <div id="qaIssueContainer" style="max-height:380px;overflow-y:auto"></div>
+      </div>
+      <div id="qaGlossaryEmpty" style="text-align:center;padding:30px;color:var(--text-muted);font-size:0.85rem">
+        กด 🤖 ตรวจ QA ด้วย AI เพื่อเริ่มการตรวจสอบคลังศัพท์
+      </div>
+    </div>
+    <div class="modal-footer">
+      <span id="qaResolvedCount" style="font-size:0.74rem;color:var(--text-muted);margin-right:auto"></span>
+      <button class="btn btn-secondary btn-sm" id="qaAiFixSelectedBtn" style="display:none" onclick="qaAiFixSelected()">🤖 AI แก้ที่เลือก</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-glossary-qa')">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-export-select">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span id="exportSelectTitle">📤 เลือกตอนที่ต้องการ Export</span>
+      <button class="icon-btn" onclick="closeModal('modal-export-select')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;flex-wrap:wrap;gap:6px">
+        <div style="display:flex;gap:6px">
+          <button class="btn-xs" onclick="exportSelSelectAll()">เลือกทั้งหมด</button>
+          <button class="btn-xs" onclick="exportSelDeselectAll()">ยกเลิก</button>
+          <button class="btn-xs" onclick="exportSelSelectTranslated()">เฉพาะที่แปลแล้ว</button>
+        </div>
+        <span id="exportSelCount" style="font-size:0.74rem;color:var(--text-muted)">0 ตอน</span>
+      </div>
+      <div id="exportSelList" style="display:flex;flex-direction:column;gap:3px;max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:var(--bg-deep)"></div>
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-top:8px">ลากเพื่อเรียงลำดับ หรือเลือก checkbox เพื่อรวมใน export</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-export-select')">ยกเลิก</button>
+      <button class="btn btn-primary" id="exportSelConfirmBtn" onclick="confirmExportSelected()">📤 Export</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-batch-chapters">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>⚡ Batch แปลตอน — เลือกตอนที่ต้องการ</span>
+      <button class="icon-btn" onclick="closeModal('modal-batch-chapters')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="display:flex;gap:6px">
+          <button class="btn-xs" onclick="bchSelectAll()">เลือกทั้งหมด</button>
+          <button class="btn-xs" onclick="bchDeselectAll()">ยกเลิก</button>
+          <button class="btn-xs" onclick="bchSelectPending()">เฉพาะที่ยังไม่แปล</button>
+        </div>
+        <span id="bchSelectedCount" style="font-size:0.74rem;color:var(--text-muted)">0 ตอนที่เลือก</span>
+      </div>
+      <div id="bchChapterList" style="display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--radius);padding:6px;background:var(--bg-deep)"></div>
+      <div style="margin-top:10px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <select id="bchModel" class="mini-select">
+          <optgroup label="── Google ──">
+            <option value="google/gemini-2.5-flash">Gemini 2.5 Flash 🔥</option>
+            <option value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+            <option value="google/gemini-2.0-flash-001">Gemini 2.0 Flash</option>
+          </optgroup>
+          <optgroup label="── DeepSeek ──">
+            <option value="deepseek/deepseek-v3.2">DeepSeek V3.2 🆕</option>
+            <option value="deepseek/deepseek-chat-v3-0324">DeepSeek V3 (Mar)</option>
+            <option value="deepseek/deepseek-chat">DeepSeek V3</option>
+          </optgroup>
+          <optgroup label="── OpenAI ──">
+            <option value="openai/gpt-5-nano">GPT-5 Nano</option>
+            <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
+          </optgroup>
+        </select>
+        <label class="toggle-mini"><input type="checkbox" id="bchUsePolish"/> Polish</label>
+        <label class="toggle-mini" title="ข้ามตอนที่แปลแล้ว"><input type="checkbox" id="bchSkipTranslated" checked/> ข้ามตอนที่แปลแล้ว</label>
+        <label class="toggle-mini" title="ส่งท้ายตอนก่อนหน้า ~600 ตัวอักษรเป็น context ให้ AI รู้จักตัวละครและสำนวน"><input type="checkbox" id="bchUsePrevContext" checked/> Prev Context</label>
+      </div>
+      <div id="bchProgressBox" style="display:none;margin-top:10px">
+        <div class="progress-label-row">
+          <span id="bchProgressLabel">กำลังแปล...</span>
+          <span id="bchProgressPct">0%</span>
+        </div>
+        <div class="progress-track"><div class="progress-fill" id="bchProgressFill"></div></div>
+        <div id="bchLog" class="batch-log" style="margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-batch-chapters')">ปิด</button>
+      <button class="btn btn-primary" id="bchStartBtn" onclick="startBatchChapters()">⚡ เริ่มแปล</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="modal-bulk-rename">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>✏ แก้ไขชื่อตอน</span>
+      <button class="icon-btn" onclick="closeModal('modal-bulk-rename')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- AI Rename toolbar -->
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" id="bulkRenameAiBtn" onclick="bulkRenameWithAI()">🤖 AI แปลชื่อทั้งหมด</button>
+        <select id="bulkRenameModel" class="mini-select">
+          <option value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
+          <option value="google/gemini-2.5-flash-lite">Gemini 2.5 Flash Lite</option>
+          <option value="deepseek/deepseek-v3.2">DeepSeek V3.2</option>
+          <option value="deepseek/deepseek-chat">DeepSeek V3</option>
+          <option value="openai/gpt-4.1-nano">GPT-4.1 Nano</option>
+        </select>
+        <span id="bulkRenameStatus" style="font-size:0.78rem;color:var(--gold)"></span>
+      </div>
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:8px">แก้ไขชื่อโดยตรง หรือกด 🤖 เพื่อให้ AI แปลชื่อเกาหลีเป็นไทยทั้งหมด</div>
+
+      <!-- Find & Replace in title names -->
+      <div class="br-fr-box">
+        <div class="br-fr-label">⇄ Find &amp; Replace ชื่อตอน</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px;flex-wrap:wrap">
+          <input id="brFrFind" type="text" class="text-input" placeholder="ค้นหาใน ชื่อตอน..." style="flex:1;min-width:120px" oninput="brFrLive()"/>
+          <input id="brFrReplace" type="text" class="text-input" placeholder="แทนที่ด้วย..." style="flex:1;min-width:120px"/>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <label class="toggle-mini"><input type="checkbox" id="brFrCase"/> Case Sensitive</label>
+          <span id="brFrInfo" style="font-size:0.74rem;color:var(--text-muted);flex:1">พิมพ์เพื่อค้นหา</span>
+          <button class="btn-xs" onclick="brFrReplaceAll()">แทนที่ทั้งหมด</button>
+        </div>
+      </div>
+
+      <div id="bulkRenameList" style="display:flex;flex-direction:column;gap:4px;max-height:300px;overflow-y:auto;margin-top:8px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-bulk-rename')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveBulkRename()">💾 บันทึกทั้งหมด</button>
+    </div>
+  </div>
+</div>
+
+<!-- THEME EDITOR MODAL -->
+<div class="modal-backdrop" id="modal-theme">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>🎨 Theme Editor — ปรับแต่ง UI</span>
+      <button class="icon-btn" onclick="closeModal('modal-theme')">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px">
+      <!-- Color section -->
+      <div class="theme-section-label">สีหลัก</div>
+      <div class="theme-grid">
+        <div class="theme-row">
+          <label class="theme-lbl">สี Accent (ทอง)</label>
+          <input type="color" id="th-accent" class="theme-color-input" value="#c9a84c" oninput="themePreview()"/>
+          <input type="text"  id="th-accent-hex" class="theme-hex-input" value="#c9a84c" oninput="themeHexInput('th-accent','th-accent-hex')"/>
+        </div>
+        <div class="theme-row">
+          <label class="theme-lbl">배경 void (ลึกสุด)</label>
+          <input type="color" id="th-bg-void" class="theme-color-input" value="#080b0f" oninput="themePreview()"/>
+          <input type="text"  id="th-bg-void-hex" class="theme-hex-input" value="#080b0f" oninput="themeHexInput('th-bg-void','th-bg-void-hex')"/>
+        </div>
+        <div class="theme-row">
+          <label class="theme-lbl">배경 Surface (panels)</label>
+          <input type="color" id="th-bg-surface" class="theme-color-input" value="#111520" oninput="themePreview()"/>
+          <input type="text"  id="th-bg-surface-hex" class="theme-hex-input" value="#111520" oninput="themeHexInput('th-bg-surface','th-bg-surface-hex')"/>
+        </div>
+        <div class="theme-row">
+          <label class="theme-lbl">ข้อความหลัก</label>
+          <input type="color" id="th-text-primary" class="theme-color-input" value="#d8dde8" oninput="themePreview()"/>
+          <input type="text"  id="th-text-primary-hex" class="theme-hex-input" value="#d8dde8" oninput="themeHexInput('th-text-primary','th-text-primary-hex')"/>
+        </div>
+        <div class="theme-row">
+          <label class="theme-lbl">ข้อความรอง</label>
+          <input type="color" id="th-text-secondary" class="theme-color-input" value="#8090a8" oninput="themePreview()"/>
+          <input type="text"  id="th-text-secondary-hex" class="theme-hex-input" value="#8090a8" oninput="themeHexInput('th-text-secondary','th-text-secondary-hex')"/>
+        </div>
+        <div class="theme-row">
+          <label class="theme-lbl">Crimson (error/danger)</label>
+          <input type="color" id="th-crimson" class="theme-color-input" value="#c23048" oninput="themePreview()"/>
+          <input type="text"  id="th-crimson-hex" class="theme-hex-input" value="#c23048" oninput="themeHexInput('th-crimson','th-crimson-hex')"/>
+        </div>
+      </div>
+
+      <!-- Font section -->
+      <div class="theme-section-label" style="margin-top:10px">ฟอนต์</div>
+      <div class="theme-grid">
+        <div class="theme-row">
+          <label class="theme-lbl">ฟอนต์ Body (ไทย)</label>
+          <select id="th-font-body" class="mini-select" style="flex:1" onchange="themePreview()">
+            <option value="'Noto Sans Thai','Noto Serif Thai',sans-serif">Noto Sans Thai (default)</option>
+            <option value="'Noto Serif Thai',serif">Noto Serif Thai</option>
+            <option value="'Sarabun',sans-serif">Sarabun</option>
+            <option value="'Kanit',sans-serif">Kanit</option>
+            <option value="sans-serif">System Sans</option>
+            <option value="serif">System Serif</option>
+          </select>
+        </div>
+        <div class="theme-row">
+          <label class="theme-lbl">ขนาดฟอนต์ Base</label>
+          <input type="range" id="th-font-size" min="12" max="18" step="1" value="15" style="flex:1" oninput="themePreview();document.getElementById('th-font-size-val').textContent=this.value+'px'"/>
+          <span id="th-font-size-val" style="font-size:0.74rem;color:var(--text-muted);min-width:32px">15px</span>
+        </div>
+      </div>
+
+      <!-- Border radius -->
+      <div class="theme-section-label" style="margin-top:10px">ขอบมน (Border Radius)</div>
+      <div class="theme-grid">
+        <div class="theme-row">
+          <label class="theme-lbl">ขอบมน (ทั่วไป)</label>
+          <input type="range" id="th-radius" min="0" max="16" step="1" value="6" style="flex:1" oninput="themePreview();document.getElementById('th-radius-val').textContent=this.value+'px'"/>
+          <span id="th-radius-val" style="font-size:0.74rem;color:var(--text-muted);min-width:32px">6px</span>
+        </div>
+      </div>
+
+      <!-- Presets -->
+      <div class="theme-section-label" style="margin-top:10px">Presets สำเร็จรูป</div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-xs" onclick="themeApplyPreset('dark-gold')">⚔ Dark Gold (default)</button>
+        <button class="btn-xs" onclick="themeApplyPreset('deep-blue')">🌊 Deep Blue</button>
+        <button class="btn-xs" onclick="themeApplyPreset('forest')">🌿 Forest Green</button>
+        <button class="btn-xs" onclick="themeApplyPreset('crimson')">🔴 Crimson Night</button>
+        <button class="btn-xs" onclick="themeApplyPreset('light')">☀ Light Mode</button>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost btn-sm" onclick="themeReset()">↺ Reset default</button>
+      <button class="btn btn-ghost" onclick="closeModal('modal-theme')">ปิด</button>
+      <button class="btn btn-primary" onclick="themeSave()">💾 บันทึก Theme</button>
+    </div>
+  </div>
+</div>
+
+<!-- GLOSSARY EXPORT MODAL -->
+<div class="modal-backdrop" id="modal-glossary-export">
+  <div class="modal">
+    <div class="modal-header">
+      <span>📤 Export คลังศัพท์</span>
+      <button class="icon-btn" onclick="closeModal('modal-glossary-export')">✕</button>
+    </div>
+    <div class="modal-body" style="gap:10px">
+      <div style="font-size:0.82rem;color:var(--text-secondary)" id="glossaryExportInfo">โหลด...</div>
+
+      <!-- Scope -->
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:0.8rem;color:var(--text-muted);min-width:60px">ขอบเขต</span>
+        <label class="toggle-mini"><input type="radio" name="gexScope" value="all" checked onchange="glossaryExportPreview()"/> ทั้งหมด</label>
+        <label class="toggle-mini"><input type="radio" name="gexScope" value="filtered" onchange="glossaryExportPreview()"/> ตามที่กรองไว้</label>
+        <select id="gexTypeFilter" class="mini-select" onchange="glossaryExportPreview()">
+          <option value="">ทุกประเภท</option>
+          <option value="character">ตัวละคร</option>
+          <option value="title">ตำแหน่ง</option>
+          <option value="rank">ลำดับ</option>
+          <option value="term">คำศัพท์</option>
+          <option value="honorific">คำยกย่อง</option>
+          <option value="place">สถานที่</option>
+          <option value="skill">ทักษะ</option>
+          <option value="item">ไอเทม</option>
+          <option value="clan">กลุ่ม/สำนัก</option>
+          <option value="monster">มอนสเตอร์</option>
+        </select>
+      </div>
+
+      <!-- Columns (for CSV/TXT) -->
+      <div style="display:flex;align-items:flex-start;gap:10px;flex-wrap:wrap">
+        <span style="font-size:0.8rem;color:var(--text-muted);min-width:60px;padding-top:2px">คอลัมน์</span>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <label class="toggle-mini"><input type="checkbox" id="gexColKorean" checked onchange="glossaryExportPreview()"/> เกาหลี</label>
+          <label class="toggle-mini"><input type="checkbox" id="gexColThai" checked onchange="glossaryExportPreview()"/> ไทย</label>
+          <label class="toggle-mini"><input type="checkbox" id="gexColType" checked onchange="glossaryExportPreview()"/> ประเภท</label>
+          <label class="toggle-mini"><input type="checkbox" id="gexColNote" checked onchange="glossaryExportPreview()"/> หมายเหตุ</label>
+          <label class="toggle-mini"><input type="checkbox" id="gexColSource" onchange="glossaryExportPreview()"/> ตอนที่พบ</label>
+        </div>
+      </div>
+
+      <!-- Preview -->
+      <div style="font-size:0.74rem;color:var(--text-muted);margin-top:2px">ตัวอย่าง (5 แถวแรก):</div>
+      <pre id="glossaryExportPreviewBox" style="font-size:0.72rem;background:var(--bg-deep);border:1px solid var(--border);border-radius:var(--radius);padding:8px;max-height:130px;overflow:auto;white-space:pre-wrap;color:var(--text-secondary);font-family:var(--font-mono)"></pre>
+    </div>
+    <div class="modal-footer" style="flex-wrap:wrap;gap:6px">
+      <button class="btn btn-ghost" onclick="closeModal('modal-glossary-export')">ปิด</button>
+      <button class="btn btn-secondary btn-sm" onclick="doExportGlossary('txt')">📄 TXT</button>
+      <button class="btn btn-secondary btn-sm" onclick="doExportGlossary('md')">📝 MD</button>
+      <button class="btn btn-secondary btn-sm" onclick="doExportGlossary('csv')">📊 CSV</button>
+      <button class="btn btn-primary btn-sm" onclick="doExportGlossary('json')">🗂 JSON</button>
+      <button class="btn btn-secondary btn-sm" onclick="doExportGlossary('xlsx')">📗 XLSX</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- GLOSSARY INHERIT MODAL -->
+<div class="modal-backdrop" id="modal-glossary-inherit">
+  <div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <span>🔗 Import Glossary จาก Workspace อื่น</span>
+      <button class="icon-btn" onclick="closeModal('modal-glossary-inherit')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sf-label" style="margin-bottom:8px">เลือก Workspace ต้นทาง</div>
+      <select id="inheritWsSelect" class="text-input" style="margin-bottom:10px" onchange="previewInheritGlossary()">
+        <option value="">— เลือก Workspace —</option>
+      </select>
+      <div id="inheritPreviewInfo" style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px"></div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;margin-bottom:6px;cursor:pointer">
+        <input type="checkbox" id="inheritSkipDup" checked> ข้ามคำที่ซ้ำกัน (Korean เหมือนกัน)
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-size:0.82rem;cursor:pointer">
+        <input type="checkbox" id="inheritCharsOnly"> Import เฉพาะตัวละคร (character)
+      </label>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-glossary-inherit')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="confirmInheritGlossary()">🔗 Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- SPLIT CHAPTER MODAL -->
+<div class="modal-backdrop" id="modal-split-chapter">
+  <div class="modal" style="max-width:560px">
+    <div class="modal-header">
+      <span>✂ Split ตอน</span>
+      <button class="icon-btn" onclick="closeModal('modal-split-chapter')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sf-label" style="margin-bottom:6px">ตัดที่บรรทัดที่ (นับจาก 1) — ตอนจะถูกแบ่งเป็น 2 ส่วน</div>
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:10px">
+        <input id="splitLineNum" type="number" min="1" class="text-input" style="width:120px" placeholder="บรรทัดที่..."/>
+        <span id="splitTotalLines" style="font-size:0.78rem;color:var(--text-muted)"></span>
+      </div>
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">ชื่อตอนใหม่:</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input id="splitTitle1" type="text" class="text-input" placeholder="ส่วนที่ 1 (เดิม)"/>
+        <input id="splitTitle2" type="text" class="text-input" placeholder="ส่วนที่ 2 (ใหม่)"/>
+      </div>
+      <div id="splitPreview" style="font-size:0.75rem;color:var(--text-muted);white-space:pre-wrap;max-height:120px;overflow:hidden;border:1px solid var(--border);border-radius:4px;padding:6px"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-split-chapter')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="confirmSplitChapter()">✂ Split</button>
+    </div>
+  </div>
+</div>
+
+<!-- MERGE CHAPTER MODAL -->
+<div class="modal-backdrop" id="modal-merge-chapter">
+  <div class="modal" style="max-width:500px">
+    <div class="modal-header">
+      <span>🔗 Merge ตอน</span>
+      <button class="icon-btn" onclick="closeModal('modal-merge-chapter')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sf-label" style="margin-bottom:8px">รวมตอนนี้กับตอนถัดไป (หรือก่อนหน้า)</div>
+      <div id="mergeInfo" style="font-size:0.82rem;margin-bottom:10px;padding:8px;background:var(--bg-deep);border-radius:6px;line-height:1.6"></div>
+      <div class="sf-label" style="margin-bottom:4px">ชื่อตอนหลัง Merge:</div>
+      <input id="mergeTitleResult" type="text" class="text-input" style="margin-bottom:8px"/>
+      <div style="display:flex;gap:10px">
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+          <input type="radio" name="mergeDir" value="next" checked> รวมกับตอนถัดไป
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:0.82rem;cursor:pointer">
+          <input type="radio" name="mergeDir" value="prev"> รวมกับตอนก่อนหน้า
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-merge-chapter')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="confirmMergeChapter()">🔗 Merge</button>
+    </div>
+  </div>
+</div>
+
+<!-- GLOSSARY CSV IMPORT MODAL -->
+<div class="modal-backdrop" id="modal-glossary-csv-import">
+  <div class="modal" style="max-width:600px">
+    <div class="modal-header">
+      <span>📥 Import Glossary จาก CSV</span>
+      <button class="icon-btn" onclick="closeModal('modal-glossary-csv-import')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:0.78rem;color:var(--text-muted);margin-bottom:10px">
+        รูปแบบ CSV: <code>Korean, Thai, Type, Gender, Note</code> (header บรรทัดแรกถูกข้าม)<br>
+        Type: character / title / rank / term / honorific / place / skill / item / clan / monster<br>
+        Gender: male / female / neutral (เว้นว่างได้ถ้าไม่ใช่ตัวละคร)
+      </div>
+      <div id="csvImportStats" style="font-size:0.82rem;margin-bottom:8px;color:var(--gold)"></div>
+      <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:6px">
+        <table style="width:100%;font-size:0.78rem;border-collapse:collapse" id="csvPreviewTable">
+          <thead style="position:sticky;top:0;background:var(--bg-card)">
+            <tr>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Korean</th>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Thai</th>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Type</th>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Gender</th>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">Note</th>
+              <th style="padding:6px 8px;text-align:left;border-bottom:1px solid var(--border)">สถานะ</th>
+            </tr>
+          </thead>
+          <tbody id="csvPreviewBody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-glossary-csv-import')">ยกเลิก</button>
+      <button class="btn btn-primary" id="csvImportConfirmBtn" onclick="confirmGlossaryCSVImport()">✓ Import ที่เลือก</button>
+    </div>
+  </div>
+</div>
+
+<!-- MULTI WORKSPACE EXPORT MODAL -->
+<div class="modal-backdrop" id="modal-multi-export">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <span>📦 Export หลาย Workspace</span>
+      <button class="icon-btn" onclick="closeModal('modal-multi-export')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+        <span class="sf-label">เลือก Workspace ที่ต้องการ Export</span>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="multiExportSelectAll(true)">เลือกทั้งหมด</button>
+          <button class="btn btn-ghost btn-sm" onclick="multiExportSelectAll(false)">ยกเลิกทั้งหมด</button>
+        </div>
+      </div>
+      <div id="multiExportList" style="display:flex;flex-direction:column;gap:6px;max-height:320px;overflow-y:auto;margin-bottom:12px"></div>
+      <div id="multiExportCount" style="font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">0 Workspace ที่เลือก</div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-multi-export')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="doMultiExport()">📥 Export JSON Bundle</button>
+    </div>
+  </div>
+</div>
+
+<!-- Marathon Config Modal -->
+<div class="modal-overlay" id="modal-marathon-config" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span>🏃 Marathon — ตั้งค่า</span>
+      <button class="icon-btn" onclick="closeModal('modal-marathon-config')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sf-group">
+        <div class="sf-label">Preset การแปล</div>
+        <select id="mc-preset-select" class="select-input">
+          <option value="literary">📖 นิยาย — Literary</option>
+          <option value="draft">⚡ ฉบับร่าง — Draft</option>
+          <option value="dialogue">🎭 บทสนทนา — Dialogue</option>
+          <option value="faithful">🔤 แปลตรง — Faithful</option>
+          <option value="webtoon">📱 เว็บตูน — Webtoon</option>
+          <option value="mtlFix">🔧 ตรวจ MTL — MTL Fix</option>
+        </select>
+      </div>
+      <div class="sf-group">
+        <div class="sf-label">แปลพร้อมกัน (Concurrency) <span id="mc-concurrency-val">3</span> ตอน</div>
+        <input type="range" id="mc-concurrency" min="1" max="5" step="1" value="3" class="range-input" oninput="document.getElementById('mc-concurrency-val').textContent=this.value"/>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:2px">แนะนำ 2-3 เพื่อหลีกเลี่ยง API rate limit</div>
+      </div>
+      <div class="sf-group">
+        <div class="sf-label">จำกัดตอน/วัน (0 = ไม่จำกัด)</div>
+        <input type="number" id="mc-daily-limit" class="text-input" value="100" min="0" max="9999" style="max-width:120px"/>
+      </div>
+      <div class="sf-group">
+        <div class="sf-label">จำกัดค่าใช้จ่าย/วัน USD (0 = ไม่จำกัด)</div>
+        <input type="number" id="mc-cost-limit" class="text-input" value="0" min="0" max="999" step="0.5" style="max-width:120px"/>
+      </div>
+      <div class="sf-group">
+        <label class="toggle-mini" style="gap:8px;cursor:pointer">
+          <input type="checkbox" id="mc-retry" checked/>
+          <span style="font-size:0.82rem;color:var(--text-secondary)">Retry อัตโนมัติเมื่อล้มเหลว (1 ครั้ง)</span>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-marathon-config')">ยกเลิก</button>
+      <button class="btn btn-primary" onclick="saveMarathonConfig()">💾 บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<!-- Context Manager Modal -->
+<div class="modal-backdrop" id="modal-ctx-manager">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>🧠 Context Memory — Summaries</span>
+      <button class="icon-btn" onclick="closeModal('modal-ctx-manager')">✕</button>
+    </div>
+    <div class="modal-body">
+      <!-- Token Usage Bar -->
+      <div style="margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+          <div class="sf-label" style="margin:0">Token Usage</div>
+          <span id="ctxTokenTotal" style="font-size:0.72rem;color:var(--text-muted)">0 / 1500 tokens</span>
+        </div>
+        <div style="background:var(--bg-deep);border-radius:99px;height:6px;overflow:hidden">
+          <div id="ctxTokenBar" style="height:100%;width:0%;background:var(--accent);border-radius:99px;transition:width 0.3s,background 0.3s"></div>
+        </div>
+        <div style="font-size:0.70rem;color:var(--text-muted);margin-top:3px">เมื่อ buffer เต็ม AI จะ compress อัตโนมัติ</div>
+      </div>
+      <!-- Summary List -->
+      <div id="ctxSummaryList" style="max-height:420px;overflow-y:auto;padding-right:2px"></div>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between">
+      <button class="btn btn-danger btn-sm" onclick="ctxResetAll()">🗑 ล้างทั้งหมด</button>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-ctx-manager')">ปิด</button>
+        <button class="btn btn-primary btn-sm" onclick="ctxSaveAndClose()">💾 บันทึก</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Preset Editor Modal -->
+<div class="modal-backdrop" id="modal-preset-editor">
+  <div class="modal modal-wide">
+    <div class="modal-header">
+      <span>✏ แก้ไข Translation Preset</span>
+      <button class="icon-btn" onclick="closeModal('modal-preset-editor')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="sf-group">
+        <div class="sf-label">Preset ที่ต้องการแก้ไข</div>
+        <select id="pe-preset-select" class="select-input" onchange="loadPresetForEdit()">
+          <option value="literary">📖 นิยาย — Literary</option>
+          <option value="draft">⚡ ฉบับร่าง — Draft</option>
+          <option value="dialogue">🎭 บทสนทนา — Dialogue</option>
+          <option value="faithful">🔤 แปลตรง — Faithful</option>
+          <option value="webtoon">📱 เว็บตูน — Webtoon</option>
+          <option value="mtlFix">🔧 ตรวจ MTL — MTL Fix</option>
+        </select>
+      </div>
+      <div class="sf-group">
+        <div class="sf-label" style="display:flex;justify-content:space-between;align-items:center">
+          <span>System Prompt <span id="pe-custom-badge" class="tag tag-term" style="display:none;font-size:0.68rem">Custom</span></span>
+          <button class="btn-xs" onclick="resetPresetToDefault()">↺ คืนค่าเดิม</button>
+        </div>
+        <textarea id="pe-prompt-text" class="editor-ta" style="height:260px;font-size:0.76rem;font-family:'JetBrains Mono',monospace;resize:vertical"></textarea>
+        <div style="font-size:0.70rem;color:var(--text-muted);margin-top:4px">
+          Placeholders: <code style="background:var(--surface-2);padding:1px 4px;border-radius:2px">{glossary}</code>
+          <code style="background:var(--surface-2);padding:1px 4px;border-radius:2px">{context}</code>
+          <code style="background:var(--surface-2);padding:1px 4px;border-radius:2px">{text}</code>
+          <code style="background:var(--surface-2);padding:1px 4px;border-radius:2px">{style_note}</code>
+          <code style="background:var(--surface-2);padding:1px 4px;border-radius:2px">{mtl_draft}</code> (mtlFix เท่านั้น)
+        </div>
+      </div>
+      <div class="sf-group">
+        <div class="sf-label">Temperature <span id="pe-temp-val">0.65</span></div>
+        <input type="range" id="pe-temperature" min="0" max="1" step="0.05" value="0.65" class="range-input" oninput="document.getElementById('pe-temp-val').textContent=this.value"/>
+      </div>
+      <div id="pe-validate-result" style="display:none"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('modal-preset-editor')">ยกเลิก</button>
+      <button class="btn btn-primary" id="pe-validate-btn" onclick="validateAndSaveCustomPreset()">🤖 Validate &amp; บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
